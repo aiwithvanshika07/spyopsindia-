@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Shadow Ops RAW - Ultra</title>
+
+<style>
+body { margin:0; background:black; color:white; font-family:Arial; overflow:hidden;}
+
+#game {
+  width:100vw; height:100vh;
+  position:relative; display:none;
+  background-size:cover;
+}
+
+/* CHARACTER IMAGES */
+.player,.enemy,.file{
+  position:absolute;
+  width:40px; height:40px;
+  background-size:cover;
+}
+
+.player{
+  background-image:url("https://i.imgur.com/4LGAZ8t.png"); /* spy */
+}
+
+.enemy{
+  background-image:url("https://i.imgur.com/Z8bKQ8K.png"); /* enemy */
+}
+
+.file{
+  background:yellow;
+  border-radius:50%;
+}
+
+/* UI */
+#ui{
+  position:absolute;
+  top:10px; left:10px;
+  background:rgba(0,0,0,0.5);
+  padding:10px;
+  border-radius:10px;
+}
+
+/* CUTSCENE */
+#cutscene, #hacking{
+  position:absolute;
+  width:100%; height:100%;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+}
+
+button{
+  padding:10px;
+  margin-top:10px;
+}
+
+/* MOBILE CONTROLS */
+#controls{
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+.ctrl-btn{
+  padding:15px;
+  margin:5px;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SOUND -->
+<audio id="alertSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="successSound" src="https://www.soundjay.com/button/beep-09.wav"></audio>
+
+<!-- CUTSCENE -->
+<div id="cutscene">
+  <h1>🎬 Mission Briefing</h1>
+  <p>You are an elite RAW Agent. Infiltrate and secure intel.</p>
+  <button onclick="startGame()">Start Mission</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+
+  <div id="ui">
+    Level: <span id="level">1</span> |
+    Score: <span id="score">0</span>
+    <br>
+    Gadgets: [D] Drone | [I] Invisible | [J] Jammer
+  </div>
+
+  <div class="player" id="player"></div>
+  <div class="enemy" id="enemy"></div>
+  <div class="file" id="file"></div>
+
+  <!-- MOBILE CONTROLS -->
+  <div id="controls">
+    <button class="ctrl-btn" onclick="move('up')">⬆</button><br>
+    <button class="ctrl-btn" onclick="move('left')">⬅</button>
+    <button class="ctrl-btn" onclick="move('down')">⬇</button>
+    <button class="ctrl-btn" onclick="move('right')">➡</button>
+  </div>
+
+</div>
+
+<!-- HACKING -->
+<div id="hacking" style="display:none;">
+  <h2>💻 HACKING...</h2>
+  <p>Press SPACE repeatedly!</p>
+  <p id="hackProgress">0%</p>
+</div>
+
+<script>
+let px=100, py=100;
+let ex=400, ey=200;
+let level=1, score=0;
+let invisible=false;
+
+const player = document.getElementById("player");
+const enemy = document.getElementById("enemy");
+const file = document.getElementById("file");
+
+const alertSound = document.getElementById("alertSound");
+const successSound = document.getElementById("successSound");
+
+function startGame(){
+  document.getElementById("cutscene").style.display="none";
+  document.getElementById("game").style.display="block";
+  newLevel();
+  update();
+}
+
+function newLevel(){
+
+  // DIFFERENT MAP BACKGROUNDS
+  const game = document.getElementById("game");
+
+  if(level==1){
+    game.style.backgroundImage="url('https://i.imgur.com/1n8Z1ZP.jpg')";
+  }
+  else if(level==2){
+    game.style.backgroundImage="url('https://i.imgur.com/3WZ7b9K.jpg')";
+  }
+  else{
+    game.style.backgroundImage="url('https://i.imgur.com/Vp6zJgS.jpg')";
+  }
+
+  px=100; py=100;
+  ex=300+Math.random()*200;
+  ey=200+Math.random()*200;
+
+  file.style.left=(500+Math.random()*200)+"px";
+  file.style.top=(300+Math.random()*200)+"px";
+}
+
+function update(){
+
+  player.style.left=px+"px";
+  player.style.top=py+"px";
+
+  // SMART AI
+  let dx=px-ex;
+  let dy=py-ey;
+  let dist=Math.hypot(dx,dy);
+
+  if(dist<200 && !invisible){
+    ex+=dx/dist*2;
+    ey+=dy/dist*2;
+  }
+
+  enemy.style.left=ex+"px";
+  enemy.style.top=ey+"px";
+
+  // DETECTION
+  if(dist<40 && !invisible){
+    alertSound.play();
+    alert("❌ Mission Failed");
+    location.reload();
+  }
+
+  // FILE
+  let fx=file.offsetLeft;
+  let fy=file.offsetTop;
+
+  if(Math.hypot(px-fx,py-fy)<30){
+    startHacking();
+    return;
+  }
+
+  requestAnimationFrame(update);
+}
+
+// KEYBOARD
+document.addEventListener("keydown", e=>{
+  if(e.key=="ArrowUp") py-=10;
+  if(e.key=="ArrowDown") py+=10;
+  if(e.key=="ArrowLeft") px-=10;
+  if(e.key=="ArrowRight") px+=10;
+
+  // GADGETS
+  if(e.key=="i"){
+    invisible=true;
+    player.style.opacity=0.3;
+    setTimeout(()=>{ invisible=false; player.style.opacity=1;},3000);
+  }
+
+  if(e.key=="d"){
+    alert("📡 Enemy at: "+Math.round(ex)+","+Math.round(ey));
+  }
+
+  if(e.key=="j"){
+    ex-=80; ey-=80;
+  }
+});
+
+// MOBILE CONTROL
+function move(dir){
+  if(dir=="up") py-=10;
+  if(dir=="down") py+=10;
+  if(dir=="left") px-=10;
+  if(dir=="right") px+=10;
+}
+
+// HACKING
+function startHacking(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("hacking").style.display="flex";
+
+  let progress=0;
+
+  function hack(e){
+    if(e.code==="Space"){
+      progress+=10;
+      document.getElementById("hackProgress").innerText=progress+"%";
+
+      if(progress>=100){
+        document.removeEventListener("keydown", hack);
+        finishLevel();
+      }
+    }
+  }
+
+  document.addEventListener("keydown", hack);
+}
+
+function finishLevel(){
+  document.getElementById("hacking").style.display="none";
+  document.getElementById("game").style.display="block";
+
+  level++;
+  score+=100;
+
+  successSound.play();
+
+  document.getElementById("level").innerText=level;
+  document.getElementById("score").innerText=score;
+
+  alert("✅ Mission Complete!");
+
+  newLevel();
+  update();
+}
+</script>
+
+</body>
+</html>
