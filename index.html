@@ -2,30 +2,41 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shadow Ops RAW - Ultra</title>
+<title>SpyOpsIndia</title>
 
 <style>
-body { margin:0; background:black; color:white; font-family:Arial; overflow:hidden;}
+body {
+  margin:0;
+  overflow:hidden;
+  font-family:Arial;
+  font-size:14px;
+  background:black;
+  color:white;
+}
 
 #game {
-  width:100vw; height:100vh;
-  position:relative; display:none;
+  width:100vw;
+  height:100vh;
+  position:relative;
+  display:none;
   background-size:cover;
+  background-position:center;
 }
 
-/* CHARACTER IMAGES */
 .player,.enemy,.file{
   position:absolute;
-  width:40px; height:40px;
+  width:40px;
+  height:40px;
   background-size:cover;
 }
 
+/* WORKING IMAGES */
 .player{
-  background-image:url("https://i.imgur.com/4LGAZ8t.png"); /* spy */
+  background-image:url("https://cdn-icons-png.flaticon.com/512/9131/9131529.png");
 }
 
 .enemy{
-  background-image:url("https://i.imgur.com/Z8bKQ8K.png"); /* enemy */
+  background-image:url("https://cdn-icons-png.flaticon.com/512/147/147144.png");
 }
 
 .file{
@@ -33,19 +44,19 @@ body { margin:0; background:black; color:white; font-family:Arial; overflow:hidd
   border-radius:50%;
 }
 
-/* UI */
 #ui{
   position:absolute;
-  top:10px; left:10px;
-  background:rgba(0,0,0,0.5);
+  top:10px;
+  left:10px;
+  background:rgba(0,0,0,0.6);
   padding:10px;
   border-radius:10px;
 }
 
-/* CUTSCENE */
 #cutscene, #hacking{
   position:absolute;
-  width:100%; height:100%;
+  width:100%;
+  height:100%;
   background:black;
   display:flex;
   justify-content:center;
@@ -58,7 +69,6 @@ button{
   margin-top:10px;
 }
 
-/* MOBILE CONTROLS */
 #controls{
   position:absolute;
   bottom:20px;
@@ -69,39 +79,30 @@ button{
 .ctrl-btn{
   padding:15px;
   margin:5px;
-  font-size:18px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- SOUND -->
-<audio id="alertSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-<audio id="successSound" src="https://www.soundjay.com/button/beep-09.wav"></audio>
-
-<!-- CUTSCENE -->
 <div id="cutscene">
   <h1>🎬 Mission Briefing</h1>
-  <p>You are an elite RAW Agent. Infiltrate and secure intel.</p>
+  <p>You are a RAW Agent. Complete secret missions.</p>
   <button onclick="startGame()">Start Mission</button>
 </div>
 
-<!-- GAME -->
 <div id="game">
 
   <div id="ui">
     Level: <span id="level">1</span> |
-    Score: <span id="score">0</span>
-    <br>
-    Gadgets: [D] Drone | [I] Invisible | [J] Jammer
+    Score: <span id="score">0</span><br>
+    Gadgets: D (Drone) | I (Invisible) | J (Jammer)
   </div>
 
   <div class="player" id="player"></div>
   <div class="enemy" id="enemy"></div>
   <div class="file" id="file"></div>
 
-  <!-- MOBILE CONTROLS -->
   <div id="controls">
     <button class="ctrl-btn" onclick="move('up')">⬆</button><br>
     <button class="ctrl-btn" onclick="move('left')">⬅</button>
@@ -111,7 +112,6 @@ button{
 
 </div>
 
-<!-- HACKING -->
 <div id="hacking" style="display:none;">
   <h2>💻 HACKING...</h2>
   <p>Press SPACE repeatedly!</p>
@@ -124,12 +124,9 @@ let ex=400, ey=200;
 let level=1, score=0;
 let invisible=false;
 
-const player = document.getElementById("player");
-const enemy = document.getElementById("enemy");
-const file = document.getElementById("file");
-
-const alertSound = document.getElementById("alertSound");
-const successSound = document.getElementById("successSound");
+const player=document.getElementById("player");
+const enemy=document.getElementById("enemy");
+const file=document.getElementById("file");
 
 function startGame(){
   document.getElementById("cutscene").style.display="none";
@@ -140,17 +137,17 @@ function startGame(){
 
 function newLevel(){
 
-  // DIFFERENT MAP BACKGROUNDS
-  const game = document.getElementById("game");
+  const game=document.getElementById("game");
 
+  // WORKING BACKGROUNDS
   if(level==1){
-    game.style.backgroundImage="url('https://i.imgur.com/1n8Z1ZP.jpg')";
+    game.style.backgroundImage="url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee')";
   }
   else if(level==2){
-    game.style.backgroundImage="url('https://i.imgur.com/3WZ7b9K.jpg')";
+    game.style.backgroundImage="url('https://images.unsplash.com/photo-1501785888041-af3ef285b470')";
   }
   else{
-    game.style.backgroundImage="url('https://i.imgur.com/Vp6zJgS.jpg')";
+    game.style.backgroundImage="url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1')";
   }
 
   px=100; py=100;
@@ -166,7 +163,6 @@ function update(){
   player.style.left=px+"px";
   player.style.top=py+"px";
 
-  // SMART AI
   let dx=px-ex;
   let dy=py-ey;
   let dist=Math.hypot(dx,dy);
@@ -179,14 +175,11 @@ function update(){
   enemy.style.left=ex+"px";
   enemy.style.top=ey+"px";
 
-  // DETECTION
   if(dist<40 && !invisible){
-    alertSound.play();
     alert("❌ Mission Failed");
     location.reload();
   }
 
-  // FILE
   let fx=file.offsetLeft;
   let fy=file.offsetTop;
 
@@ -198,14 +191,12 @@ function update(){
   requestAnimationFrame(update);
 }
 
-// KEYBOARD
 document.addEventListener("keydown", e=>{
   if(e.key=="ArrowUp") py-=10;
   if(e.key=="ArrowDown") py+=10;
   if(e.key=="ArrowLeft") px-=10;
   if(e.key=="ArrowRight") px+=10;
 
-  // GADGETS
   if(e.key=="i"){
     invisible=true;
     player.style.opacity=0.3;
@@ -221,7 +212,6 @@ document.addEventListener("keydown", e=>{
   }
 });
 
-// MOBILE CONTROL
 function move(dir){
   if(dir=="up") py-=10;
   if(dir=="down") py+=10;
@@ -229,7 +219,6 @@ function move(dir){
   if(dir=="right") px+=10;
 }
 
-// HACKING
 function startHacking(){
   document.getElementById("game").style.display="none";
   document.getElementById("hacking").style.display="flex";
@@ -258,8 +247,6 @@ function finishLevel(){
   level++;
   score+=100;
 
-  successSound.play();
-
   document.getElementById("level").innerText=level;
   document.getElementById("score").innerText=score;
 
@@ -272,3 +259,6 @@ function finishLevel(){
 
 </body>
 </html>
+
+
+  
