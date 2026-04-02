@@ -1,264 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SpyOpsIndia</title>
-
+<title>Spy Ops India - Advanced</title>
 <style>
-body {
-  margin:0;
-  overflow:hidden;
-  font-family:Arial;
-  font-size:14px;
+body { margin:0; overflow:hidden; font-family:Arial; background:#000; }
+canvas { display:block; }
+
+#ui {
+  position:absolute;
+  top:10px; left:10px;
+  color:white;
+  font-size:16px;
+}
+
+#startScreen {
+  position:absolute;
+  width:100%; height:100%;
   background:black;
   color:white;
-}
-
-#game {
-  width:100vw;
-  height:100vh;
-  position:relative;
-  display:none;
-  background-size:cover;
-  background-position:center;
-}
-
-.player,.enemy,.file{
-  position:absolute;
-  width:40px;
-  height:40px;
-  background-size:cover;
-}
-
-/* WORKING IMAGES */
-.player{
-  background-image:url("https://cdn-icons-png.flaticon.com/512/9131/9131529.png");
-}
-
-.enemy{
-  background-image:url("https://cdn-icons-png.flaticon.com/512/147/147144.png");
-}
-
-.file{
-  background:yellow;
-  border-radius:50%;
-}
-
-#ui{
-  position:absolute;
-  top:10px;
-  left:10px;
-  background:rgba(0,0,0,0.6);
-  padding:10px;
-  border-radius:10px;
-}
-
-#cutscene, #hacking{
-  position:absolute;
-  width:100%;
-  height:100%;
-  background:black;
   display:flex;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
   flex-direction:column;
 }
 
-button{
-  padding:10px;
+button {
+  padding:10px 20px;
+  font-size:18px;
   margin-top:10px;
 }
 
-#controls{
+#controls {
   position:absolute;
   bottom:20px;
   left:50%;
   transform:translateX(-50%);
 }
 
-.ctrl-btn{
-  padding:15px;
+.btn {
+  width:60px; height:60px;
+  background:#222;
+  color:white;
+  border-radius:50%;
+  text-align:center;
+  line-height:60px;
+  font-size:20px;
   margin:5px;
+  display:inline-block;
 }
 </style>
 </head>
-
 <body>
 
-<div id="cutscene">
-  <h1>🎬 Mission Briefing</h1>
-  <p>You are a RAW Agent. Complete secret missions.</p>
+<div id="startScreen">
+  <h1>🔥 Spy Ops India</h1>
+  <p>Eliminate enemies. Survive as long as possible.</p>
   <button onclick="startGame()">Start Mission</button>
 </div>
 
-<div id="game">
+<div id="ui"></div>
+<canvas id="game"></canvas>
 
-  <div id="ui">
-    Level: <span id="level">1</span> |
-    Score: <span id="score">0</span><br>
-    Gadgets: D (Drone) | I (Invisible) | J (Jammer)
+<div id="controls">
+  <div><span class="btn" onclick="move('up')">↑</span></div>
+  <div>
+    <span class="btn" onclick="move('left')">←</span>
+    <span class="btn" onclick="move('down')">↓</span>
+    <span class="btn" onclick="move('right')">→</span>
   </div>
-
-  <div class="player" id="player"></div>
-  <div class="enemy" id="enemy"></div>
-  <div class="file" id="file"></div>
-
-  <div id="controls">
-    <button class="ctrl-btn" onclick="move('up')">⬆</button><br>
-    <button class="ctrl-btn" onclick="move('left')">⬅</button>
-    <button class="ctrl-btn" onclick="move('down')">⬇</button>
-    <button class="ctrl-btn" onclick="move('right')">➡</button>
-  </div>
-
-</div>
-
-<div id="hacking" style="display:none;">
-  <h2>💻 HACKING...</h2>
-  <p>Press SPACE repeatedly!</p>
-  <p id="hackProgress">0%</p>
+  <div><span class="btn" onclick="shoot()">🔥</span></div>
 </div>
 
 <script>
-let px=100, py=100;
-let ex=400, ey=200;
-let level=1, score=0;
-let invisible=false;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-const player=document.getElementById("player");
-const enemy=document.getElementById("enemy");
-const file=document.getElementById("file");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player, bullets, enemies, score, health, level, gameRunning;
+
+const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
+const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+bgMusic.loop = true;
 
 function startGame(){
-  document.getElementById("cutscene").style.display="none";
-  document.getElementById("game").style.display="block";
-  newLevel();
+  document.getElementById("startScreen").style.display="none";
+
+  player = { x:200, y:300, size:15, speed:15 };
+  bullets = [];
+  enemies = [];
+  score = 0;
+  health = 100;
+  level = 1;
+  gameRunning = true;
+
+  bgMusic.play();
+
+  spawnEnemies();
   update();
 }
 
-function newLevel(){
+function spawnEnemies(){
+  setInterval(()=>{
+    if(!gameRunning) return;
+    enemies.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height/2,
+      size:15,
+      speed:1 + level*0.5
+    });
+  },1200);
+}
 
-  const game=document.getElementById("game");
+function move(dir){
+  if(!gameRunning) return;
+  if(dir=="up") player.y -= player.speed;
+  if(dir=="down") player.y += player.speed;
+  if(dir=="left") player.x -= player.speed;
+  if(dir=="right") player.x += player.speed;
+}
 
-  // WORKING BACKGROUNDS
-  if(level==1){
-    game.style.backgroundImage="url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee')";
-  }
-  else if(level==2){
-    game.style.backgroundImage="url('https://images.unsplash.com/photo-1501785888041-af3ef285b470')";
-  }
-  else{
-    game.style.backgroundImage="url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1')";
-  }
-
-  px=100; py=100;
-  ex=300+Math.random()*200;
-  ey=200+Math.random()*200;
-
-  file.style.left=(500+Math.random()*200)+"px";
-  file.style.top=(300+Math.random()*200)+"px";
+function shoot(){
+  if(!gameRunning) return;
+  shootSound.play();
+  bullets.push({ x:player.x, y:player.y, size:4, speed:8 });
 }
 
 function update(){
+  if(!gameRunning) return;
 
-  player.style.left=px+"px";
-  player.style.top=py+"px";
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  let dx=px-ex;
-  let dy=py-ey;
-  let dist=Math.hypot(dx,dy);
+  // player
+  ctx.fillStyle="cyan";
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.size, 0, Math.PI*2);
+  ctx.fill();
 
-  if(dist<200 && !invisible){
-    ex+=dx/dist*2;
-    ey+=dy/dist*2;
+  // bullets
+  bullets.forEach((b,i)=>{
+    b.y -= b.speed;
+    ctx.fillStyle="yellow";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // enemies AI follow player
+  enemies.forEach((e,ei)=>{
+    let dx = player.x - e.x;
+    let dy = player.y - e.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+
+    e.x += dx/dist * e.speed;
+    e.y += dy/dist * e.speed;
+
+    ctx.fillStyle="red";
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.size, 0, Math.PI*2);
+    ctx.fill();
+
+    // hit player
+    if(dist < e.size + player.size){
+      health -= 10;
+      enemies.splice(ei,1);
+    }
+
+    // bullet hit
+    bullets.forEach((b,bi)=>{
+      let dx = e.x - b.x;
+      let dy = e.y - b.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < e.size + b.size){
+        enemies.splice(ei,1);
+        bullets.splice(bi,1);
+        score++;
+      }
+    });
+  });
+
+  // level system
+  if(score > level*5){
+    level++;
   }
 
-  enemy.style.left=ex+"px";
-  enemy.style.top=ey+"px";
+  // UI
+  document.getElementById("ui").innerText =
+    "Score: "+score+" | Health: "+health+" | Level: "+level;
 
-  if(dist<40 && !invisible){
-    alert("❌ Mission Failed");
+  // game over
+  if(health <= 0){
+    gameRunning = false;
+    bgMusic.pause();
+    alert("Mission Failed! Score: "+score);
     location.reload();
   }
 
-  let fx=file.offsetLeft;
-  let fy=file.offsetTop;
-
-  if(Math.hypot(px-fx,py-fy)<30){
-    startHacking();
-    return;
-  }
-
   requestAnimationFrame(update);
-}
-
-document.addEventListener("keydown", e=>{
-  if(e.key=="ArrowUp") py-=10;
-  if(e.key=="ArrowDown") py+=10;
-  if(e.key=="ArrowLeft") px-=10;
-  if(e.key=="ArrowRight") px+=10;
-
-  if(e.key=="i"){
-    invisible=true;
-    player.style.opacity=0.3;
-    setTimeout(()=>{ invisible=false; player.style.opacity=1;},3000);
-  }
-
-  if(e.key=="d"){
-    alert("📡 Enemy at: "+Math.round(ex)+","+Math.round(ey));
-  }
-
-  if(e.key=="j"){
-    ex-=80; ey-=80;
-  }
-});
-
-function move(dir){
-  if(dir=="up") py-=10;
-  if(dir=="down") py+=10;
-  if(dir=="left") px-=10;
-  if(dir=="right") px+=10;
-}
-
-function startHacking(){
-  document.getElementById("game").style.display="none";
-  document.getElementById("hacking").style.display="flex";
-
-  let progress=0;
-
-  function hack(e){
-    if(e.code==="Space"){
-      progress+=10;
-      document.getElementById("hackProgress").innerText=progress+"%";
-
-      if(progress>=100){
-        document.removeEventListener("keydown", hack);
-        finishLevel();
-      }
-    }
-  }
-
-  document.addEventListener("keydown", hack);
-}
-
-function finishLevel(){
-  document.getElementById("hacking").style.display="none";
-  document.getElementById("game").style.display="block";
-
-  level++;
-  score+=100;
-
-  document.getElementById("level").innerText=level;
-  document.getElementById("score").innerText=score;
-
-  alert("✅ Mission Complete!");
-
-  newLevel();
-  update();
 }
 </script>
 
 </body>
 </html>
 
-
-  
+    
+      
