@@ -1,18 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
+        <!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Spy Ops India - Advanced</title>
-<style>
-body { margin:0; overflow:hidden; font-family:Arial; background:#000; }
-canvas { display:block; }
+<title>Spy Mission Pro</title>
 
-#ui {
-  position:absolute;
-  top:10px; left:10px;
-  color:white;
-  font-size:16px;
-}
+<style>
+body { margin:0; overflow:hidden; font-family:Arial; }
+canvas { display:block; }
 
 #startScreen {
   position:absolute;
@@ -20,15 +14,20 @@ canvas { display:block; }
   background:black;
   color:white;
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   flex-direction:column;
 }
 
 button {
   padding:10px 20px;
   font-size:18px;
-  margin-top:10px;
+}
+
+#ui {
+  position:absolute;
+  top:10px; left:10px;
+  color:white;
 }
 
 #controls {
@@ -45,17 +44,16 @@ button {
   border-radius:50%;
   text-align:center;
   line-height:60px;
-  font-size:20px;
   margin:5px;
   display:inline-block;
 }
 </style>
+
 </head>
 <body>
 
 <div id="startScreen">
-  <h1>🔥 Spy Ops India</h1>
-  <p>Eliminate enemies. Survive as long as possible.</p>
+  <h1>🕵️ Spy Mission</h1>
   <button onclick="startGame()">Start Mission</button>
 </div>
 
@@ -79,24 +77,23 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let player, bullets, enemies, score, health, level, gameRunning;
+let player, enemies, bullets, effects;
+let health, score, running;
 
-const shootSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
-const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
-bgMusic.loop = true;
+const bg = new Image();
+bg.src = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee";
 
 function startGame(){
   document.getElementById("startScreen").style.display="none";
 
-  player = { x:200, y:300, size:15, speed:15 };
-  bullets = [];
+  player = {x:200,y:300,size:15};
   enemies = [];
-  score = 0;
-  health = 100;
-  level = 1;
-  gameRunning = true;
+  bullets = [];
+  effects = [];
 
-  bgMusic.play();
+  health = 100;
+  score = 0;
+  running = true;
 
   spawnEnemies();
   update();
@@ -104,68 +101,75 @@ function startGame(){
 
 function spawnEnemies(){
   setInterval(()=>{
-    if(!gameRunning) return;
+    if(!running) return;
+
     enemies.push({
-      x: Math.random()*canvas.width,
-      y: Math.random()*canvas.height/2,
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height/2,
       size:15,
-      speed:1 + level*0.5
+      state:"patrol",
+      dir:Math.random()*2-1
     });
-  },1200);
+
+  },1500);
 }
 
-function move(dir){
-  if(!gameRunning) return;
-  if(dir=="up") player.y -= player.speed;
-  if(dir=="down") player.y += player.speed;
-  if(dir=="left") player.x -= player.speed;
-  if(dir=="right") player.x += player.speed;
+function move(d){
+  if(d=="up") player.y-=20;
+  if(d=="down") player.y+=20;
+  if(d=="left") player.x-=20;
+  if(d=="right") player.x+=20;
 }
 
 function shoot(){
-  if(!gameRunning) return;
-  shootSound.play();
-  bullets.push({ x:player.x, y:player.y, size:4, speed:8 });
+  bullets.push({x:player.x,y:player.y});
 }
 
 function update(){
-  if(!gameRunning) return;
+  if(!running) return;
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(bg,0,0,canvas.width,canvas.height);
 
   // player
   ctx.fillStyle="cyan";
   ctx.beginPath();
-  ctx.arc(player.x, player.y, player.size, 0, Math.PI*2);
+  ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
   ctx.fill();
 
   // bullets
   bullets.forEach((b,i)=>{
-    b.y -= b.speed;
-    ctx.fillStyle="yellow";
+    b.y -= 10;
+    ctx.strokeStyle="yellow";
     ctx.beginPath();
-    ctx.arc(b.x, b.y, b.size, 0, Math.PI*2);
-    ctx.fill();
+    ctx.moveTo(b.x,b.y);
+    ctx.lineTo(b.x,b.y+10);
+    ctx.stroke();
   });
 
-  // enemies AI follow player
+  // enemies
   enemies.forEach((e,ei)=>{
+
     let dx = player.x - e.x;
     let dy = player.y - e.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
 
-    e.x += dx/dist * e.speed;
-    e.y += dy/dist * e.speed;
+    // AI
+    if(dist < 150){
+      e.x += dx/dist * 2;
+      e.y += dy/dist * 2;
+    } else {
+      e.x += e.dir * 1;
+    }
 
     ctx.fillStyle="red";
     ctx.beginPath();
-    ctx.arc(e.x, e.y, e.size, 0, Math.PI*2);
+    ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
     ctx.fill();
 
     // hit player
     if(dist < e.size + player.size){
-      health -= 10;
-      enemies.splice(ei,1);
+      health -= 5;
+      effects.push({x:e.x,y:e.y,time:10});
     }
 
     // bullet hit
@@ -174,28 +178,31 @@ function update(){
       let dy = e.y - b.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < e.size + b.size){
+      if(dist < e.size){
         enemies.splice(ei,1);
         bullets.splice(bi,1);
         score++;
+        effects.push({x:e.x,y:e.y,time:15});
       }
     });
   });
 
-  // level system
-  if(score > level*5){
-    level++;
-  }
+  // effects (explosion)
+  effects.forEach((fx,i)=>{
+    ctx.fillStyle="orange";
+    ctx.beginPath();
+    ctx.arc(fx.x,fx.y,fx.time,0,Math.PI*2);
+    ctx.fill();
+    fx.time--;
+  });
 
   // UI
-  document.getElementById("ui").innerText =
-    "Score: "+score+" | Health: "+health+" | Level: "+level;
+  document.getElementById("ui").innerHTML =
+    "Score: "+score+"<br>Health: "+health;
 
-  // game over
-  if(health <= 0){
-    gameRunning = false;
-    bgMusic.pause();
-    alert("Mission Failed! Score: "+score);
+  if(health<=0){
+    running=false;
+    alert("Mission Failed. Score: "+score);
     location.reload();
   }
 
@@ -205,6 +212,3 @@ function update(){
 
 </body>
 </html>
-
-    
-      
